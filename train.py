@@ -29,7 +29,7 @@ def load_coco_captions(
 
 def collate_fn(
     batch: List[Tuple[Tensor, str]],
-    gpt2_type: str = "distilgpt2",
+    gpt2_type: str = "gpt2-medium",
     max_length: int = 1024,
 ) -> Tuple[Tensor, Tensor, Tensor]:
     tokenizer = get_tokenizer(gpt2_type)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--vision-backbone", type=str, default="blip:base")
-    parser.add_argument("--language-model", type=str, default="distilgpt2")
+    parser.add_argument("--language-model", type=str, default="gpt2-medium")
     parser.add_argument("--beam-size", type=int, default=1)
     parser.add_argument("--max-epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -117,6 +117,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     seed_everything(args.seed)
+    
 
     if args.checkpoint:
         model = Decoder.load_from_checkpoint(args.checkpoint)
@@ -125,15 +126,16 @@ if __name__ == "__main__":
             vision_backbone=args.vision_backbone,
             language_model=args.language_model,
         )
+    print('Model loaded...')
 
     if not args.eval_only:
         trainer = Trainer(
             max_epochs=args.max_epochs,
             accelerator="auto",
             devices="auto",
-            strategy=strategies.DDPStrategy(find_unused_parameters=False),
+            # strategy=strategies.DDPStrategy(find_unused_parameters=False),
             precision=args.precision,
-            accumulate_grad_batches=args.accumulate_grad_batches,
+            # accumulate_grad_batches=args.accumulate_grad_batches,
             logger=True,
             callbacks=[
                 callbacks.ModelCheckpoint(monitor="validation_loss"),
@@ -146,6 +148,7 @@ if __name__ == "__main__":
         train_dataset = load_coco_captions(args.vision_backbone, split="train")
         val_dataset = load_coco_captions(args.vision_backbone, split="val")
         # Train the model, and then load the best-performing state dictionary.
+        print('Training model...')
         trainer.fit(
             model,
             get_dataloader(train_dataset, batch_size=args.batch_size, shuffle=True),
