@@ -112,8 +112,13 @@ class ParallelImageEncoder(IterDataPipe):
             # For legacy reasons, unsqueeze along dimension 1.
             image_features_np = image_features.unsqueeze(1).cpu().numpy()
             text_features_np = text_features.unsqueeze(1).cpu().numpy()
+<<<<<<< HEAD
             yield [(feats, caps) for feats, caps in zip(image_features_np, captions)]
             # yield [(feats, caps) for feats, caps in zip(text_features_np, captions)]
+=======
+            # yield [(feats, caps) for feats, caps in zip(image_features_np, captions)]
+            yield [(feats, caps) for feats, caps in zip(text_features_np, captions)]
+>>>>>>> 03d6f36bcace1aae97f4f4fe6363c6887e94b337
 
 
 def coco_captions_datapipe(

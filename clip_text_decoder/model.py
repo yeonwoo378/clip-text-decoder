@@ -30,18 +30,20 @@ class Decoder(LightningModule):
     def __init__(
         self,
         vision_backbone: str = "blip:base",
-        language_model: str = "distilgpt2",
+        language_model: str = "gpt2-medium", #"distilgpt2",
         device: Optional[Union[str, torch.device]] = None,
     ):
         super().__init__()
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-
         self.save_hyperparameters()
         check_vision_backbone(vision_backbone)
+        print(f"Loading vision backbone: {vision_backbone}")
         self.vision_backbone = vision_backbone
         check_language_model(language_model)
+        print(f"Loading language model: {language_model}")
         self.language_model = load_language_model(language_model, device=device)
+        print("Model loaded successfully!")
 
         self.to(device)
 
@@ -55,7 +57,7 @@ class Decoder(LightningModule):
         batch_size, _, num_features = encoder_hidden_states.shape
         # TODO: Check if we can get '768' (num_features) from the GPT2 model.
         hidden = torch.zeros(
-            size=(batch_size, 1, 768),
+            size=(batch_size, 1, 1024),
             dtype=encoder_hidden_states.dtype,
             device=encoder_hidden_states.device,
         )
@@ -260,6 +262,7 @@ class ImageCaptionInferenceModel(DecoderInferenceModel):
         image: Union[str, Image.Image],
         max_len: int = 64,
         beam_size: int = 1,
+        encoded=None
     ) -> str:
         if isinstance(image, str):
             image = Image.open(image)
