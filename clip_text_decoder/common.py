@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from enum import Enum
 from typing import Callable, Optional, Tuple, Union
+import time
 
 import clip
 import torch
 from clip.model import CLIP
-from lavis.models import BlipFeatureExtractor, load_model_and_preprocess
+# from lavis.models import BlipFeatureExtractor, load_model_and_preprocess
 from PIL import Image
 from torch import Tensor, nn
 from transformers import GPT2Config, GPT2LMHeadModel, GPT2Tokenizer
@@ -34,8 +35,11 @@ def load_language_model(
     name: str, device: Optional[Union[str, torch.device]] = None
 ) -> nn.Module:
     check_language_model(name)
+    print(f"Loading language model: {name}")
     config = GPT2Config.from_pretrained(name, add_cross_attention=True)
+    print('Loaded pre-trained config')
     model = GPT2LMHeadModel.from_pretrained(name, config=config)
+    print('Loaded pre-trained model')
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -45,7 +49,16 @@ def load_language_model(
 
 def load_tokenizer(name: str) -> GPT2Tokenizer:
     check_language_model(name)
-    tokenizer = GPT2Tokenizer.from_pretrained(name)
+    while True:
+        try:
+            tokenizer = GPT2Tokenizer.from_pretrained(name)
+            break
+        # if fail, just retry
+        except Exception as e:
+            print(f'Error loading tokenizer: {e}')
+            delay = 5
+            time.sleep(delay)
+            print(f'Retrying in {delay} seconds...')
     tokenizer.pad_token = tokenizer.eos_token
     return tokenizer
 
@@ -77,7 +90,7 @@ def load_vision_backbone(
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    if backbone == VisionBackbones.blip_base.value:
+    if False : #backbone == VisionBackbones.blip_base.value:
         model, preprocessors, _ = load_model_and_preprocess(
             "blip_feature_extractor", model_type="base", is_eval=True, device=device
         )
@@ -88,11 +101,11 @@ def load_vision_backbone(
         return clip.load(name, device=device, jit=False)
 
 
-def encode_image_tensor(image: Tensor, backbone: nn.Module) -> Tensor:
-    if isinstance(backbone, BlipFeatureExtractor):
-        features = backbone.extract_features({"image": image}, mode="image")
-        return features.image_embeds[:, 0]
-    else:
-        # Currently, all other supported backbones are CLIP
-        assert isinstance(backbone, CLIP)
-        return backbone.encode_image(image)
+# def encode_image_tensor(image: Tensor, backbone: nn.Module) -> Tensor:
+#     if False: # isinstance(backbone, BlipFeatureExtractor):
+#         features = backbone.extract_features({"image": image}, mode="image")
+#         return features.image_embeds[:, 0]
+#     else:
+#         # Currently, all other supported backbones are CLIP
+#         assert isinstance(backbone, CLIP)
+#         return backbone.encode_image(image)

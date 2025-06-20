@@ -14,8 +14,9 @@ import wget
 from PIL import Image
 from torchdata.datapipes.iter import IterableWrapper, IterDataPipe
 from tqdm import tqdm
+import random
 
-from clip_text_decoder.common import encode_image_tensor, load_vision_backbone
+from clip_text_decoder.common import  load_vision_backbone #encode_image_tensor,
 from clip_text_decoder.utils.fileio import async_batch_get_request
 
 COCO_ANNOTATIONS_URL = (
@@ -104,10 +105,15 @@ class ParallelImageEncoder(IterDataPipe):
                 [self.preprocessor(image.convert("RGB")) for image, _ in batch]
             ).to(self.device)
             image_features = encode_image_tensor(images, self.model)
+            rand_captions = [random.choice(captions) for _ in range(len(captions))]
+            text_tokens = clip.tokenize(rand_captions).to(self.device)
+            text_features = self.model.encode_text(text_tokens)
 
             # For legacy reasons, unsqueeze along dimension 1.
             image_features_np = image_features.unsqueeze(1).cpu().numpy()
+            text_features_np = text_features.unsqueeze(1).cpu().numpy()
             yield [(feats, caps) for feats, caps in zip(image_features_np, captions)]
+            # yield [(feats, caps) for feats, caps in zip(text_features_np, captions)]
 
 
 def coco_captions_datapipe(

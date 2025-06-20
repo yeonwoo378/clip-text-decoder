@@ -17,10 +17,16 @@ from clip_text_decoder.common import load_tokenizer
 from clip_text_decoder.dataset import CachedDataset, CocoCaptionsDataset
 from clip_text_decoder.model import Decoder, DecoderInferenceModel
 
-get_tokenizer = lru_cache()(load_tokenizer)
+try:
+    get_tokenizer = lru_cache()(load_tokenizer)
+except:
+    get_tokenizer = load_tokenizer
+    
+tokenizer = get_tokenizer('gpt2')
+print('Tokenizer loaded...')
 
 
-@lru_cache()
+# @lru_cache()
 def load_coco_captions(
     vision_backbone: str = "blip:base", split: str = "train"
 ) -> CocoCaptionsDataset:
@@ -32,7 +38,7 @@ def collate_fn(
     gpt2_type: str = "distilgpt2",
     max_length: int = 1024,
 ) -> Tuple[Tensor, Tensor, Tensor]:
-    tokenizer = get_tokenizer(gpt2_type)
+    # tokenizer = get_tokenizer(gpt2_type)
     bos, eos = tokenizer.bos_token, tokenizer.eos_token
     encoded = tokenizer.batch_encode_plus(
         [f"{bos}{random.choice(y)}{eos}" for _, y in batch],
@@ -104,7 +110,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--vision-backbone", type=str, default="blip:base")
-    parser.add_argument("--language-model", type=str, default="distilgpt2")
+    parser.add_argument("--language-model", type=str, default="gpt2")
     parser.add_argument("--beam-size", type=int, default=1)
     parser.add_argument("--max-epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -117,6 +123,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     seed_everything(args.seed)
+    
 
     if args.checkpoint:
         model = Decoder.load_from_checkpoint(args.checkpoint)
@@ -125,15 +132,16 @@ if __name__ == "__main__":
             vision_backbone=args.vision_backbone,
             language_model=args.language_model,
         )
+    print('Model loaded...')
 
     if not args.eval_only:
         trainer = Trainer(
             max_epochs=args.max_epochs,
             accelerator="auto",
             devices="auto",
-            strategy=strategies.DDPStrategy(find_unused_parameters=False),
+            # strategy=strategies.DDPStrategy(find_unused_parameters=False),
             precision=args.precision,
-            accumulate_grad_batches=args.accumulate_grad_batches,
+            # accumulate_grad_batches=args.accumulate_grad_batches,
             logger=True,
             callbacks=[
                 callbacks.ModelCheckpoint(monitor="validation_loss"),
@@ -146,6 +154,7 @@ if __name__ == "__main__":
         train_dataset = load_coco_captions(args.vision_backbone, split="train")
         val_dataset = load_coco_captions(args.vision_backbone, split="val")
         # Train the model, and then load the best-performing state dictionary.
+        print('Training model...')
         trainer.fit(
             model,
             get_dataloader(train_dataset, batch_size=args.batch_size, shuffle=True),
@@ -158,7 +167,7 @@ if __name__ == "__main__":
     # Build a self-contained inference model and generate a bunch of sample predictions.
     decoder = DecoderInferenceModel(
         model=model,
-        tokenizer=get_tokenizer(args.language_model),
+        tokenizer= tokenizer # get_tokenizer(args.language_model),
     )
 
     if not args.eval_only:
