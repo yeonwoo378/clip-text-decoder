@@ -101,16 +101,6 @@ def load_vision_backbone(
         return clip.load(name, device=device, jit=False)
 
 
-<<<<<<< HEAD
-# def encode_image_tensor(image: Tensor, backbone: nn.Module) -> Tensor:
-#     if False: # isinstance(backbone, BlipFeatureExtractor):
-#         features = backbone.extract_features({"image": image}, mode="image")
-#         return features.image_embeds[:, 0]
-#     else:
-#         # Currently, all other supported backbones are CLIP
-#         assert isinstance(backbone, CLIP)
-#         return backbone.encode_image(image)
-=======
 def encode_image_tensor(image: Tensor, backbone: nn.Module) -> Tensor:
     if False: # isinstance(backbone, BlipFeatureExtractor):
         features = backbone.extract_features({"image": image}, mode="image")
@@ -128,4 +118,3 @@ def encode_text_tensor(text: Tensor, backbone: nn.Module) -> Tensor:
         # Currently, all other supported backbones are CLIP
         assert isinstance(backbone, CLIP)
         return backbone.encode_text(text)
->>>>>>> 03d6f36bcace1aae97f4f4fe6363c6887e94b337

@@ -110,11 +110,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--vision-backbone", type=str, default="blip:base")
-<<<<<<< HEAD
-    parser.add_argument("--language-model", type=str, default="gpt2")
-=======
     parser.add_argument("--language-model", type=str, default="gpt2-medium")
->>>>>>> 03d6f36bcace1aae97f4f4fe6363c6887e94b337
     parser.add_argument("--beam-size", type=int, default=1)
     parser.add_argument("--max-epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=32)
